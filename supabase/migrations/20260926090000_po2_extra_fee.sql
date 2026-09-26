@@ -27,6 +27,11 @@ BEGIN
        AND ts.day_of_week = CASE WHEN EXTRACT(DOW FROM _slot_date) = 0 THEN 7 ELSE EXTRACT(DOW FROM _slot_date)::int END
        AND ts.slot_time = _slot_time
        AND ts.max_capacity = 2
+  ) AND NOT EXISTS (
+    SELECT 1 FROM public.slot_overrides so
+     WHERE so.slot_date = _slot_date
+       AND so.slot_time = _slot_time
+       AND so.max_capacity = 2
   ) THEN RAISE EXCEPTION 'NOT_PO2_SLOT'; END IF;
 
   SELECT * INTO v_sub FROM public.subscriptions
