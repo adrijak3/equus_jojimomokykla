@@ -46,7 +46,7 @@ BEGIN
   SELECT trainer_name INTO v_trainer_name
     FROM public.time_slots
    WHERE active = true
-     AND day_of_week = CASE WHEN EXTRACT(DOW FROM _slot_date) = 0 THEN 7 ELSE EXTRACT(DOW FROM _slot_date)::int END
+     AND (one_off_date = _slot_date OR (one_off_date IS NULL AND day_of_week = CASE WHEN EXTRACT(DOW FROM _slot_date) = 0 THEN 7 ELSE EXTRACT(DOW FROM _slot_date)::int END))
      AND slot_time = _slot_time
    ORDER BY id
    LIMIT 1;
