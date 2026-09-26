@@ -21,6 +21,13 @@ DECLARE
 BEGIN
   IF v_user IS NULL THEN RAISE EXCEPTION 'NOT_AUTHENTICATED'; END IF;
   IF _extra_fee_eur < 0 THEN RAISE EXCEPTION 'INVALID_EXTRA_FEE'; END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.time_slots ts
+     WHERE ts.active = true
+       AND ts.day_of_week = CASE WHEN EXTRACT(DOW FROM _slot_date) = 0 THEN 7 ELSE EXTRACT(DOW FROM _slot_date)::int END
+       AND ts.slot_time = _slot_time
+       AND ts.max_capacity = 2
+  ) THEN RAISE EXCEPTION 'NOT_PO2_SLOT'; END IF;
 
   SELECT * INTO v_sub FROM public.subscriptions
    WHERE id = _subscription_id AND user_id = v_user
