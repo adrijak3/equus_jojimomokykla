@@ -74,11 +74,11 @@ export function UnpaidLessonsOverview({ userId, staff = false }: { userId?: stri
   return (
     <div className="rounded-lg border border-gold/15 bg-gradient-card p-4 sm:p-5">
       <div className="flex items-center gap-2 mb-1"><ReceiptText className="w-4 h-4 text-gold" /><h3 className="font-display text-xl text-gradient-gold">Nepriskirtos treniruotės</h3></div>
-      <p className="text-xs text-muted-foreground mb-4">Rodomos tik įvykusios treniruotės, kurios dar nepriskirtos jokiam abonementui.</p>
+      <p className="text-xs text-muted-foreground mb-4">Rodomos neapmokėtos treniruotės ir papildomi mokesčiai.</p>
       <div className="grid sm:grid-cols-3 gap-2">
         {months.map((m) => { const mr = rows.filter((r) => r.slot_date.startsWith(m.key)); return <MonthButton key={m.key} label={m.label} rows={mr} onOpen={() => setSelected({ title: m.label, rows: mr })} />; })}
       </div>
-      <DetailsDialog selected={selected} onClose={() => setSelected(null)} />
+      <DetailsDialog selected={selected} onClose={() => setSelected(null)} staff={staff} />
     </div>
   );
 }
