@@ -220,7 +220,7 @@ function AdminNotificationsTab() {
 
   const sendTestToMe = async () => {
     const target = testEmail.trim();
-    if (!confirm(target ? `Siųsti bandomąjį telefono pranešimą į ${target} aktyvius įrenginius?` : "Siųsti bandomąjį telefono pranešimą tik į jūsų aktyvius įrenginius?")) return;
+    if (!confirm(target ? `Siųsti bandomąjį telefono pranešimą į ${target} įrenginius?` : "Siųsti bandomąjį telefono pranešimą tik į jūsų aktyvius įrenginius?")) return;
     setSending(true);
 
     try {
