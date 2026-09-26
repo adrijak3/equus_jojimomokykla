@@ -247,7 +247,6 @@ function AdminNotificationsTab() {
         toast.error(target ? "Šis vartotojas neturi aktyvios telefono pranešimų prenumeratos." : "Nėra aktyvios telefono pranešimų prenumeratos.");
         return;
       }
-
       if (data?.error === "TARGET_USER_NOT_FOUND") {
         toast.error("Vartotojas pagal šį el. paštą nerastas.");
         return;
@@ -497,8 +496,7 @@ function VacationsAdminTab() {
         {showPast && (
           <div className="mt-2 space-y-1">
             {past.map((r) => (
-              <div key={r.id} className="flex items-center justify-between gap-2 px-3 py-1.5 rounded border border-muted/20 bg-background/20 text-xs">
-                <div><span className="text-foreground/80 mr-2">{r.name}</span><span className="tabular-nums text-muted-foreground">{r.starts_on} → {r.ends_on}</span></div>
+              <div key={r.id} className="flex items-center justify-between gap-2 px-3 py-1.5 rounded border border-muted/20 bg-background/20 text-xs">                <div><span className="text-foreground/80 mr-2">{r.name}</span><span className="tabular-nums text-muted-foreground">{r.starts_on} → {r.ends_on}</span></div>
                 <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive hover:text-destructive" onClick={() => remove(r.id)}>
                   <Trash2 className="w-3 h-3" />
                 </Button>
@@ -747,8 +745,7 @@ function ScheduleTab() {
     if (!confirm("Pašalinti šį laiką?")) return;
     const { error } = await supabase.from("time_slots").update({ active: false }).eq("id", id);
     if (error) { toast.error(error.message); return; }
-    toast.success("Pašalinta"); load();
-  };
+    toast.success("Pašalinta"); load();  };
 
   // Legacy no-op — SlotRow now goes through the scope dialog.
   const updateCapacity = async (_id: string, _n: number) => {};
@@ -989,16 +986,14 @@ function UncoveredLessonsDialog({ user, onClose }: { user: Profile; onClose: () 
   const [filter, setFilter] = useState<"all" | "counted" | "uncovered" | "cancelled" | "sick">("all");
   const copyHistory = async () => {
     const lines = visibleRows.map((r) => `${r.slot_date} — ${r.slot_time.slice(0, 5)} — ${classify(r) === "counted" ? "Įskaičiuota" : classify(r) === "sick" ? "Atšaukta · liga" : classify(r) === "cancelled" ? "Atšaukta" : "Neįskaičiuota"}`);
-    const message = ["──────────── ♡ ────────────", "🐴 PAMOKŲ ISTORIJA", user.full_name, monthLabel, "", ...(lines.length ? lines.map((x) => "* " + x) : ["* Pamokų nėra."]), "", "♡ Pamokų skaičius: " + lines.length, "──────────── ♡ ────────────"].join("
-");
+    const message = ["──────────── ♡ ────────────", "🐴 PAMOKŲ ISTORIJA", user.full_name, monthLabel, "", ...(lines.length ? lines.map((x) => "* " + x) : ["* Pamokų nėra."]), "", "♡ Pamokų skaičius: " + lines.length, "──────────── ♡ ────────────"].join("\n");
     try { await navigator.clipboard.writeText(message); toast.success("Nukopijuota ✓"); } catch { toast.error("Nepavyko nukopijuoti. Patikrinkite naršyklės leidimus."); }
   };
   const now = new Date();
   const viewDate = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
   const viewMonthStart = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, "0")}-01`;
   const nextMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1);
-  const viewMonthEnd = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, "0")}-01`;
-  const monthLabel = viewDate.toLocaleDateString("lt-LT", { year: "numeric", month: "long" });
+  const viewMonthEnd = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, "0")}-01`;  const monthLabel = viewDate.toLocaleDateString("lt-LT", { year: "numeric", month: "long" });
 
   useEffect(() => {
     (async () => {
@@ -1248,7 +1243,6 @@ function ProfileLinksTab() {
     if (error) { toast.error(error.message); return; }
     load();
   };
-
   const nameOf = (id: string) => profiles.find((p) => p.id === id)?.full_name ?? "—";
 
   return (
@@ -1497,7 +1491,6 @@ function SubsTab({ focusUserId, onClearFocus }: { focusUserId?: string | null; o
     if (error) { toast.error(error.message); return; }
     toast.success("Ištrinta"); load();
   };
-
   const newPrice = calculateSubPriceByType(lessons, lessonType);
 
   const addSub = async () => {
@@ -1747,8 +1740,7 @@ function SubDetailDialog({
     const horseByBooking = Object.fromEntries((assigns ?? []).map((a: any) => [a.booking_id, horseMap[a.horse_id] ?? null]));
     return bookings.map((b: any) => ({ ...b, horse_name: horseByBooking[b.id] ?? null }));
   };
-  const load = async () => {
-    setLoading(true);
+  const load = async () => {    setLoading(true);
     const in7 = formatDateISO(new Date(Date.now() + 7 * 86400000));
     const { data } = await supabase.from("bookings").select("id, slot_date, slot_time, status, counts_in_subscription, is_individual").eq("subscription_id", sub.id).lte("slot_date", in7).order("slot_date", { ascending: false }).order("slot_time", { ascending: false });
     setRows(await enrichHorses(data ?? []));
@@ -1774,8 +1766,7 @@ function SubDetailDialog({
       source = await enrichHorses(data ?? []); title = copyMode === "details" ? "🐴 PAMOKOS" : "🐴 EQUUS JOJIMO PAMOKOS";
     }
     const lines = source.map((r) => { const date = new Date(r.slot_date + "T12:00:00").toLocaleDateString("lt-LT", { day: "2-digit", month: "2-digit" }); const bits = [date + " — " + formatTime(r.slot_time)]; if (copyMode === "details" && r.is_individual) bits.push("INDIVIDUALI"); if (copyMode === "details" && r.horse_name) bits.push("🐎 " + r.horse_name); return "* " + bits.join(" — "); });
-    const message = ["──────────── ♡ ────────────", title, userName, "", "📅 " + copyFrom + " → " + copyUntil, "", ...(lines.length ? lines : ["* Pamokų šiame laikotarpyje nėra."]), "", "♡ " + (copyMode === "unpaid" ? "Iš viso" : "Pamokų skaičius") + ": " + source.length, "──────────── ♡ ────────────"].join("
-");
+    const message = ["──────────── ♡ ────────────", title, userName, "", "📅 " + copyFrom + " → " + copyUntil, "", ...(lines.length ? lines : ["* Pamokų šiame laikotarpyje nėra."]), "", "♡ " + (copyMode === "unpaid" ? "Iš viso" : "Pamokų skaičius") + ": " + source.length, "──────────── ♡ ────────────"].join("\n");
     try { await navigator.clipboard.writeText(message); setCopyOpen(false); toast.success("Nukopijuota ✓"); } catch { toast.error("Nepavyko nukopijuoti. Patikrinkite naršyklės leidimus."); }
   };
   return (
@@ -1998,361 +1989,3 @@ function MessagesTab() {
     toast.success("Atsakymas išsiųstas");
     setReplyBody("");
     setReplyOpen(null);
-    setExpanded(userId);
-    load();
-  };
-
-  if (threads.length === 0) {
-    return (
-      <div className="rounded-xl border border-gold/15 bg-gradient-card p-8 text-center">
-        <MessageSquare className="w-8 h-8 mx-auto text-gold/50 mb-2" />
-        <p className="font-display text-lg">Žinučių nėra</p>
-        <p className="text-sm text-muted-foreground mt-1">Kai raitelis parašys, jo pokalbis atsiras čia.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between px-1">
-        <div>
-          <p className="text-sm font-medium">Pokalbiai</p>
-          <p className="text-xs text-muted-foreground">Naujausias pokalbis rodomas viršuje.</p>
-        </div>
-        <span className="text-xs text-muted-foreground">{threads.length} pokalbiai</span>
-      </div>
-
-      {threads.map((t) => {
-        const isOpen = expanded === t.user_id;
-        return (
-          <div
-            key={t.user_id}
-            className={cn(
-              "rounded-xl border bg-gradient-card overflow-hidden transition-colors",
-              t.hasUnread ? "border-gold/40 shadow-gold" : "border-gold/15",
-            )}
-          >
-            <button
-              type="button"
-              onClick={() => openThread(t.user_id, t.hasUnread)}
-              className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-gold/5"
-            >
-              <div className={cn(
-                "w-9 h-9 rounded-full flex items-center justify-center shrink-0 border",
-                t.hasUnread ? "border-gold/50 bg-gold/10 text-gold" : "border-gold/15 text-muted-foreground",
-              )}>
-                <MessageSquare className="w-4 h-4" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-display text-gold">{t.name}</span>
-                  {t.hasUnread && <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-gold text-background">Nauja</span>}
-                </div>
-                <p className="text-sm text-foreground/75 truncate mt-0.5">{t.last.body}</p>
-              </div>
-              <div className="text-right shrink-0">
-                <div className="text-[11px] text-muted-foreground">{new Date(t.last.created_at).toLocaleDateString("lt-LT")}</div>
-                <ChevronDown className={cn("w-4 h-4 ml-auto mt-1 text-muted-foreground transition-transform", isOpen && "rotate-180")} />
-              </div>
-            </button>
-
-            {isOpen && (
-              <div className="border-t border-gold/10">
-                <div className="max-h-72 overflow-auto divide-y divide-gold/5">
-                  {t.list.map((m) => (
-                    <div key={m.id} className={cn("px-4 py-3", m.from_admin && "bg-gold/5")}>
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                          {m.from_admin ? "✦ Jūs (admin)" : t.name}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground">{new Date(m.created_at).toLocaleString("lt-LT")}</span>
-                      </div>
-                      <p className="text-sm whitespace-pre-wrap">{m.body}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="border-t border-gold/10 px-4 py-3 flex flex-wrap gap-2 justify-end">
-                  {t.hasUnread && (
-                    <Button variant="ghostGold" size="sm" onClick={() => markRead(t.user_id)}>Pažymėti perskaityta</Button>
-                  )}
-                  <Button
-                    variant="gold"
-                    size="sm"
-                    onClick={() => { setReplyOpen(t.user_id); setReplyBody(""); markRead(t.user_id); }}
-                  >
-                    Atsakyti
-                  </Button>
-                </div>
-
-                {replyOpen === t.user_id && (
-                  <div className="border-t border-gold/10 p-4 space-y-2 bg-background/40">
-                    <Label htmlFor={`reply-${t.user_id}`}>Atsakymas {t.name}</Label>
-                    <textarea
-                      id={`reply-${t.user_id}`}
-                      value={replyBody}
-                      onChange={(e) => setReplyBody(e.target.value)}
-                      rows={3}
-                      maxLength={2000}
-                      className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      placeholder="Rašykite atsakymą..."
-                    />
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => setReplyOpen(null)}>Atšaukti</Button>
-                      <Button variant="gold" size="sm" disabled={sending || !replyBody.trim()} onClick={() => sendReply(t.user_id)}>
-                        Siųsti
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-/* ---------- PERMANENT SLOTS (admin: view + add + remove) ---------- */
-interface PermSlotRow { id: string; user_id: string; day_of_week: number; slot_time: string; profile_name?: string; }
-interface TimeSlotLite { id: string; day_of_week: number; slot_time: string; }
-
-function PermanentSlotsAdminTab() {
-  const [rows, setRows] = useState<PermSlotRow[]>([]);
-  const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [timeSlots, setTimeSlots] = useState<TimeSlotLite[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [requests, setRequests] = useState<any[]>([]);
-
-  // Add dialog
-  const [open, setOpen] = useState(false);
-  const [selUser, setSelUser] = useState("");
-  const [selDay, setSelDay] = useState(1);
-  const [selTime, setSelTime] = useState("");
-  const [customTime, setCustomTime] = useState(false);
-  const [customTimeValue, setCustomTimeValue] = useState("17:00");
-  const [saving, setSaving] = useState(false);
-
-  const load = async () => {
-    setLoading(true);
-    const [r, p, t, rq] = await Promise.all([
-      supabase.from("permanent_slots").select("*").order("day_of_week").order("slot_time"),
-      supabase.from("profiles").select("id, full_name, phone").order("full_name"),
-      supabase.from("time_slots").select("id, day_of_week, slot_time").eq("active", true).order("day_of_week").order("slot_time"),
-      (supabase as any).from("permanent_slot_requests").select("*").eq("status", "pending").order("created_at"),
-    ]);
-    const profs = p.data ?? [];
-    const nameMap = Object.fromEntries(profs.map((x) => [x.id, x.full_name]));
-    setRows((r.data ?? []).map((x) => ({ ...x, profile_name: nameMap[x.user_id] ?? "—" })));
-    setProfiles(profs);
-    setTimeSlots(t.data ?? []);
-    setRequests((rq.data ?? []).map((x: any) => ({ ...x, profile_name: nameMap[x.user_id] ?? "—" })));
-    setLoading(false);
-  };
-  useEffect(() => { load(); }, []);
-
-  const remove = async (row: PermSlotRow) => {
-    if (!confirm(`Pašalinti ${row.profile_name} nuolatinį laiką (${WEEKDAYS_LT[row.day_of_week - 1]} ${formatTime(row.slot_time)})?
-
-Visos būsimos pamokos šiuo laiku bus ATŠAUKTOS ir nuolatinis laikas nustos kartotis.`)) return;
-    // 1) Delete the recurring rule
-    const { error: e1 } = await supabase.from("permanent_slots").delete().eq("id", row.id);
-    if (e1) { toast.error(e1.message); return; }
-    // 2) Cancel all future active bookings for this user at this weekday/time
-    const todayISO = new Date().toISOString().slice(0, 10);
-    const { data: future } = await supabase
-      .from("bookings")
-      .select("id, slot_date")
-      .eq("user_id", row.user_id)
-      .eq("slot_time", row.slot_time)
-      .eq("status", "active")
-      .gte("slot_date", todayISO);
-    const ids = (future ?? [])
-      .filter((b) => {
-        // map Postgres dow (0=Sun..6=Sat) → app dow (1=Mon..7=Sun)
-        const d = new Date(b.slot_date + "T00:00:00");
-        const dow = d.getDay() === 0 ? 7 : d.getDay();
-        return dow === row.day_of_week;
-      })
-      .map((b) => b.id);
-    if (ids.length > 0) {
-      await supabase.from("bookings").update({ status: "cancelled" }).in("id", ids);
-    }
-    toast.success(`Pašalinta. Atšaukta ${ids.length} būsimų pamokų.`);
-    load();
-  };
-
-  const add = async () => {
-    if (!selUser) { toast.error("Pasirinkite vartotoją"); return; }
-    const finalTime = customTime ? customTimeValue : selTime;
-    if (!finalTime) { toast.error("Pasirinkite laiką"); return; }
-    if (customTime && !isValidTime(customTimeValue)) {
-      toast.error("Įveskite laiką formatu HH:MM"); return;
-    }
-    setSaving(true);
-    const { error } = await supabase.from("permanent_slots").insert({
-      user_id: selUser,
-      day_of_week: selDay,
-      slot_time: finalTime,
-    });
-    setSaving(false);
-    if (error) {
-      toast.error(error.code === "23505" ? "Šis nuolatinis laikas jau pridėtas" : error.message);
-      return;
-    }
-    toast.success("Pridėta. Vartotojas užregistruotas 12-os savaičių į priekį.");
-    setOpen(false);
-    setSelUser(""); setSelTime(""); setSelDay(1); setCustomTime(false);
-    load();
-  };
-
-  const decideRequest = async (id: string, approve: boolean) => {
-    const note = approve ? null : (prompt("Atmetimo priežastis (nebūtina):") || null);
-    const { data, error } = await (supabase as any).rpc("decide_permanent_slot_request", { _request_id: id, _approve: approve, _note: note });
-    if (error || !data?.ok) { toast.error(data?.message ?? error?.message ?? "Nepavyko"); return; }
-    toast.success(approve ? "Prašymas patvirtintas" : "Prašymas atmestas");
-    load();
-  };
-
-  const slotsForSelDay = timeSlots.filter((s) => s.day_of_week === selDay);
-
-  const byDay: Record<number, Record<string, PermSlotRow[]>> = {};
-  for (const r of rows) {
-    (byDay[r.day_of_week] ||= {})[r.slot_time] ||= [];
-    byDay[r.day_of_week][r.slot_time].push(r);
-  }
-
-  return (
-    <div>
-      {requests.length > 0 && (
-        <div className="mb-5 rounded-lg border border-gold/25 bg-gold/5 p-4">
-          <h3 className="font-display text-xl text-gradient-gold mb-3">Laukiantys prašymai</h3>
-          <div className="space-y-2">{requests.map((r) => (
-            <div key={r.id} className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-md border border-gold/15 bg-background/35 px-3 py-3">
-              <div className="flex-1"><div className="font-medium">{r.profile_name}</div><div className="text-sm text-muted-foreground">{WEEKDAYS_LT[r.day_of_week - 1]} · {formatTime(r.slot_time)}</div></div>
-              <div className="flex gap-2"><Button size="sm" variant="gold" onClick={() => decideRequest(r.id, true)}><Check className="w-4 h-4"/> Patvirtinti</Button><Button size="sm" variant="ghost" onClick={() => decideRequest(r.id, false)}><X className="w-4 h-4"/> Atmesti</Button></div>
-            </div>
-          ))}</div>
-        </div>
-      )}
-      <div className="flex justify-end mb-4">
-        <Button variant="gold" onClick={() => setOpen(true)}>
-          <Plus className="w-4 h-4" /> Pridėti nuolatinį laiką
-        </Button>
-      </div>
-
-      {loading ? (
-        <p className="text-center text-muted-foreground italic py-12">Kraunama…</p>
-      ) : rows.length === 0 ? (
-        <p className="text-center text-muted-foreground italic py-12">Niekas neturi nuolatinių laikų</p>
-      ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {[1,2,3,4,5,6,7].filter((d) => byDay[d]).map((dow) => (
-            <div key={dow} className="bg-gradient-card border border-gold/15 rounded-lg p-4">
-              <h3 className="font-display text-lg text-gold mb-3 flex items-center gap-2">
-                <Star className="w-4 h-4 fill-gold" /> {WEEKDAYS_LT[dow - 1]}
-              </h3>
-              <ul className="space-y-3">
-                {Object.entries(byDay[dow]).sort(([a],[b]) => a.localeCompare(b)).map(([time, list]) => (
-                  <li key={time}>
-                    <div className="text-sm font-medium tabular-nums text-foreground mb-1">{formatTime(time)}</div>
-                    <ul className="pl-3 space-y-1">
-                      {list.map((r) => (
-                        <li key={r.id} className="flex items-center justify-between text-sm">
-                          <span className="text-foreground/85">• {r.profile_name}</span>
-                          <button onClick={() => remove(r)} className="text-muted-foreground hover:text-destructive">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="bg-gradient-card border-gold/20">
-          <DialogHeader>
-            <DialogTitle className="font-display text-2xl text-gradient-gold flex items-center gap-2">
-              <Star className="w-5 h-5 fill-gold text-gold" /> Naujas nuolatinis laikas
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Vartotojas bus automatiškai užregistruotas į pasirinktą laiką kiekvieną savaitę (12 sav. į priekį).
-            </p>
-            <div>
-              <Label>Vartotojas</Label>
-              <select
-                value={selUser}
-                onChange={(e) => setSelUser(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">— pasirinkite vartotoją —</option>
-                {profiles.map((p) => (
-                  <option key={p.id} value={p.id}>{p.full_name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <Label>Diena</Label>
-              <select
-                value={selDay}
-                onChange={(e) => { setSelDay(Number(e.target.value)); setSelTime(""); }}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                {[1,2,3,4,5,6,7].map((d) => <option key={d} value={d}>{WEEKDAYS_LT[d - 1]}</option>)}
-              </select>
-            </div>
-            <div>
-              <Label>Laikas</Label>
-              <div className="flex gap-2 mb-2">
-                <button
-                  type="button"
-                  onClick={() => setCustomTime(false)}
-                  className={`flex-1 h-9 rounded-md border text-xs ${!customTime ? "border-gold bg-gold/10 text-gold" : "border-input text-muted-foreground"}`}
-                >
-                  Grupinė (iš tvarkaraščio)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCustomTime(true)}
-                  className={`flex-1 h-9 rounded-md border text-xs ${customTime ? "border-gold bg-gold/10 text-gold" : "border-input text-muted-foreground"}`}
-                >
-                  Individuali (savas laikas)
-                </button>
-              </div>
-              {customTime ? (
-                <TimeInput value={customTimeValue} onChange={setCustomTimeValue} />
-              ) : (
-                <select
-                  value={selTime}
-                  onChange={(e) => setSelTime(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  <option value="">— pasirinkite —</option>
-                  {slotsForSelDay.map((s) => (
-                    <option key={s.id} value={s.slot_time}>{formatTime(s.slot_time)}</option>
-                  ))}
-                </select>
-              )}
-              {!customTime && slotsForSelDay.length === 0 && (
-                <p className="text-xs text-muted-foreground mt-1.5 italic">Šią dieną tvarkaraštyje nėra grupinių pamokų — pasirink „Individuali".</p>
-              )}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setOpen(false)}>Atšaukti</Button>
-            <Button variant="gold" onClick={add} disabled={saving || !selUser || (!customTime && !selTime) || (customTime && !customTimeValue)}>
-              {saving ? "Pridedama…" : "Pridėti"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
