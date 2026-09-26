@@ -209,10 +209,9 @@ export default function Grafikas() {
 
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
-  const [bookingSuccess, setBookingSuccess] = useState<{
-    date: Date;
-    time: string;
-  } | null>(null);
+  const [bookingSuccess, setBookingSuccess] = useState<{ date: Date; time: string } | null>(null);
+  const [po2Choice, setPo2Choice] = useState<{ date: Date; time: string; subscriptions: { id: string; lessons_total: number; lessons_used: number; price: number; lesson_type: string }[] } | null>(null);
+  const [po2Busy, setPo2Busy] = useState(false);
 
   // Horse selection
   const [horseDialog, setHorseDialog] = useState<{
@@ -1082,108 +1081,60 @@ export default function Grafikas() {
     }
   };
 
-  const handleBook = async (
-    date: Date,
-    time: string,
-  ) => {
-    if (!user) {
-      toast.error(
-        "Prisijunkite, kad užsiregistruotumėte",
-      );
-      return;
-    }
-
-    if (
-      date.getTime() <
-      new Date().setHours(0, 0, 0, 0)
-    ) {
-      toast.error(
-        "Negalima registruotis į praeities pamokas",
-      );
-      return;
-    }
-
-    if (getDayCancellation(date)) {
-      toast.error(
-        "Šią dieną treniruotės nevyksta",
-      );
-      return;
-    }
-
-    const bookSlot = getDaySlots(date).find(
-      (s) => s.slot_time === time,
-    );
-
-    if (
-      getTrainerDayCancellation(
-        date,
-        bookSlot?.trainer_name,
-      )
-    ) {
-      toast.error(
-        "Šios treniruotės ta diena nevyksta",
-      );
-      return;
-    }
-
-    const key = `book-${formatDateISO(date)}-${time}`;
-
-    const slotForBooking =
-      getSlotsAtTime(date, time)[0];
-
-    setBusy(key);
-
-    const { error } = await supabase
-      .from("bookings")
-      .insert({
-        user_id: user.id,
-        slot_date: formatDateISO(date),
-        slot_time: time,
-        status: "active",
-        trainer_name:
-          slotForBooking?.trainer_name ?? null,
-      });
-
+  const createBooking = async (date: Date, time: string, options?: { subscriptionId?: string | null; countsInSubscription?: boolean; extraFeeEur?: number }) => {
+    if (!user) return false;
+    const slotForBooking = getSlotsAtTime(date, time)[0];
+    setBusy("book-" + formatDateISO(date) + "-" + time);
+    const { error } = await supabase.from("bookings").insert({ user_id: user.id, slot_date: formatDateISO(date), slot_time: time, status: "active", trainer_name: slotForBooking?.trainer_name ?? null, subscription_id: options?.subscriptionId ?? null, counts_in_subscription: options?.countsInSubscription ?? true, extra_fee_eur: options?.extraFeeEur ?? 0, extra_fee_paid: false });
     setBusy(null);
+    if (error) { toast.error(error.code === "23505" ? "Jūs jau užregistruoti į šią pamoką" : /pradedant|Grupė/i.test(error.message) ? error.message : "Klaida: " + error.message); return false; }
+    setBookingSuccess({ date, time });
+    toast.success(language === "lt" ? "Pamoka sėkmingai užregistruota!" : "Your lesson is booked!");
+    await loadData();
+    return true;
+  };
 
-    if (error) {
-      if (error.message?.includes("BOOKING_CUTOFF")) {
-        toast.error(
-          language === "lt"
-            ? "Registracija uždaryta likus 3 valandoms iki treniruotės."
-            : "Registration closes 3 hours before training.",
-          {
-            action: {
-              label: language === "lt" ? "Parašyti žinutę" : "Send message",
-              onClick: () => void shareClosedRegistration(date, time, bookSlot),
-            },
-            duration: 9000,
-          },
-        );
-      } else {
-        toast.error(
-          error.code === "23505"
-            ? "Jūs jau užregistruoti į šią pamoką"
-            : /pradedant|Grupė/i.test(error.message)
-              ? error.message
-              : "Klaida: " + error.message,
-        );
-      }
+  const handleBook = async (date: Date, time: string) => {
+    if (!user) { toast.error("Prisijunkite, kad užsiregistruotumėte"); return; }
+    if (date.getTime() < new Date().setHours(0, 0, 0, 0)) { toast.error("Negalima registruotis į praeities pamokas"); return; }
+    if (getDayCancellation(date)) { toast.error("Šią dieną treniruotės nevyksta"); return; }
+    const bookSlot = getDaySlots(date).find((s) => s.slot_time === time);
+    if (getTrainerDayCancellation(date, bookSlot?.trainer_name)) { toast.error("Šios treniruotės ta diena nevyksta"); return; }
+    const slotForBooking = getSlotsAtTime(date, time)[0];
+    if (slotForBooking?.max_capacity === 2) {
+      const today = formatDateISO(new Date());
+      const { data: subscriptions, error: subError } = await supabase.from("subscriptions").select("id, lessons_total, lessons_used, price, lesson_type").eq("user_id", user.id).eq("paid", true).gte("expires_at", today).order("purchase_date", { ascending: false });
+      if (subError) { toast.error(subError.message); return; }
+      const usable = (subscriptions ?? []).filter((s: any) => Number(s.lessons_total) > Number(s.lessons_used) && ["sportine", "sportine_po2"].includes(String(s.lesson_type)));
+      if (usable.length > 0) { setPo2Choice({ date, time, subscriptions: usable as any }); return; }
+      await createBooking(date, time, { countsInSubscription: false });
       return;
     }
+    await createBooking(date, time);
+  };
 
-    setBookingSuccess({
-      date,
-      time,
-    });
-
-    toast.success(
-      language === "lt"
-        ? "Pamoka sėkmingai užregistruota!"
-        : "Your lesson is booked!",
-    );
-
+  const choosePo2Subscription = async (subscriptionId: string) => {
+    if (!po2Choice) return;
+    const sub = po2Choice.subscriptions.find((s) => s.id === subscriptionId);
+    if (!sub) return;
+    const perLesson = Number(sub.price) / Math.max(1, Number(sub.lessons_total));
+    const extraFee = Math.max(0, Math.round((45 - perLesson) * 100) / 100);
+    setPo2Busy(true);
+    const { error } = await supabase.rpc("book_po2_with_subscription" as any, { _slot_date: formatDateISO(po2Choice.date), _slot_time: po2Choice.time, _subscription_id: subscriptionId, _extra_fee_eur: extraFee });
+    setPo2Busy(false);
+    if (error) { toast.error(error.message); return; }
+    setPo2Choice(null);
+    setBookingSuccess({ date: po2Choice.date, time: po2Choice.time });
+    toast.success(language === "lt" ? "Pamoka sėkmingai užregistruota!" : "Your lesson is booked!");
     await loadData();
+  };
+
+  const choosePo2Separate = async () => {
+    if (!po2Choice) return;
+    setPo2Busy(true);
+    const ok = await createBooking(po2Choice.date, po2Choice.time, { subscriptionId: null, countsInSubscription: false, extraFeeEur: 0 });
+    setPo2Busy(false);
+    if (ok) setPo2Choice(null);
   };
 
   // ----------------------------------------------------------
@@ -5177,6 +5128,19 @@ export default function Grafikas() {
               </Button>
             )}
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Po 2 payment choice */}
+      <Dialog open={!!po2Choice} onOpenChange={(open) => !open && !po2Busy && setPo2Choice(null)}>
+        <DialogContent className="max-w-md rounded-3xl border-gold/20 bg-gradient-card">
+          <DialogHeader><DialogTitle className="font-display text-2xl text-gradient-gold">Po 2 pamoka</DialogTitle><DialogDescription>Pasirinkite, kaip norite apmokėti šią pamoką.</DialogDescription></DialogHeader>
+          {po2Choice && <div className="space-y-3">
+            <div className="rounded-xl border border-gold/15 bg-background/30 p-3 text-sm">{po2Choice.date.toLocaleDateString("lt-LT", { weekday: "long", day: "numeric", month: "long" })} · <span className="text-gold font-semibold">{formatTime(po2Choice.time)}</span></div>
+            {po2Choice.subscriptions.map((sub) => { const perLesson = Number(sub.price) / Math.max(1, Number(sub.lessons_total)); const extra = Math.max(0, Math.round((45 - perLesson) * 100) / 100); const remainingAfter = Number(sub.lessons_total) - Number(sub.lessons_used) - 1; return <button key={sub.id} type="button" disabled={po2Busy} onClick={() => void choosePo2Subscription(sub.id)} className="w-full rounded-xl border border-gold/20 p-4 text-left hover:border-gold/50 hover:bg-gold/5 transition-colors"><div className="font-semibold">Įskaičiuoti į abonementą</div><div className="mt-1 text-xs text-muted-foreground">1 pamoka iš abonemento + papildomai <span className="font-semibold text-gold">{extra.toFixed(2).replace(".00","")} €</span> skirtumas.</div><div className="mt-1 text-xs text-muted-foreground">Po šios pamokos liks {remainingAfter}.</div></button>; })}
+            <button type="button" disabled={po2Busy} onClick={() => void choosePo2Separate()} className="w-full rounded-xl border border-gold/20 p-4 text-left hover:border-gold/50 hover:bg-gold/5 transition-colors"><div className="font-semibold">Mokėti atskirai · 45 €</div><div className="mt-1 text-xs text-muted-foreground">Ši pamoka abonemento nemažins.</div></button>
+          </div>}
+          <DialogFooter><Button variant="ghost" disabled={po2Busy} onClick={() => setPo2Choice(null)}>Atšaukti</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
