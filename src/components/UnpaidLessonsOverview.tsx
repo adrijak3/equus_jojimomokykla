@@ -66,7 +66,7 @@ export function UnpaidLessonsOverview({ userId, staff = false }: { userId?: stri
             </div>
           </div>
         ))}
-        <DetailsDialog selected={selected} onClose={() => setSelected(null)} />
+        <DetailsDialog selected={selected} onClose={() => setSelected(null)} staff={staff} />
       </div>
     );
   }
@@ -90,7 +90,7 @@ function MonthButton({ label, rows, onOpen }: { label: string; rows: Row[]; onOp
   </button>;
 }
 
-function DetailsDialog({ selected, onClose }: { selected: { title: string; rows: Row[] } | null; onClose: () => void }) {
+function DetailsDialog({ selected, onClose, staff }: { selected: { title: string; rows: Row[] } | null; onClose: () => void; staff: boolean }) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const markExtraPaid = async (row: Row) => {
     setBusyId(row.id);
@@ -101,6 +101,6 @@ function DetailsDialog({ selected, onClose }: { selected: { title: string; rows:
     onClose();
   };
   return <Dialog open={!!selected} onOpenChange={(o) => !o && onClose()}><DialogContent className="bg-gradient-card border-gold/20"><DialogHeader><DialogTitle className="font-display text-2xl text-gradient-gold">{selected?.title}</DialogTitle></DialogHeader>
-    {!selected?.rows.length ? <p className="text-sm italic text-muted-foreground py-3">Šį mėnesį neapmokėtų treniruočių nėra.</p> : <ul className="space-y-2 max-h-80 overflow-auto">{selected.rows.map((r) => <li key={r.id} className="rounded-md border border-gold/10 bg-background/30 px-3 py-2.5"><div className="flex items-center gap-3"><CalendarDays className="w-4 h-4 text-gold"/><span className="text-sm">{new Date(String(r.slot_date) + "T12:00:00").toLocaleDateString("lt-LT", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span><span className="ml-auto tabular-nums text-sm text-muted-foreground">{formatTime(r.slot_time)}</span></div>{r.extra_fee_eur > 0 && !r.extra_fee_paid && <div className="mt-2 flex items-center justify-between gap-2 rounded bg-blush/10 px-2 py-1.5 text-xs"><span>Papildomai: <b>{r.extra_fee_eur.toFixed(2).replace(".00","")} €</b></span><Button size="sm" variant="gold" onClick={() => void markExtraPaid(r)} disabled={busyId === r.id}>{busyId === r.id ? "..." : "Apmokėta"}</Button></div>}</li>)}</ul>}
+    {!selected?.rows.length ? <p className="text-sm italic text-muted-foreground py-3">Šį mėnesį neapmokėtų treniruočių nėra.</p> : <ul className="space-y-2 max-h-80 overflow-auto">{selected.rows.map((r) => <li key={r.id} className="rounded-md border border-gold/10 bg-background/30 px-3 py-2.5"><div className="flex items-center gap-3"><CalendarDays className="w-4 h-4 text-gold"/><span className="text-sm">{new Date(String(r.slot_date) + "T12:00:00").toLocaleDateString("lt-LT", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span><span className="ml-auto tabular-nums text-sm text-muted-foreground">{formatTime(r.slot_time)}</span></div>{staff && r.extra_fee_eur > 0 && !r.extra_fee_paid && <div className="mt-2 flex items-center justify-between gap-2 rounded bg-blush/10 px-2 py-1.5 text-xs"><span>Papildomai: <b>{r.extra_fee_eur.toFixed(2).replace(".00","")} €</b></span><Button size="sm" variant="gold" onClick={() => void markExtraPaid(r)} disabled={busyId === r.id}>{busyId === r.id ? "..." : "Apmokėta"}</Button></div>}</li>)}</ul>}
   </DialogContent></Dialog>;
 }
