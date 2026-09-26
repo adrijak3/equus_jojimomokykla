@@ -65,6 +65,8 @@ export type Database = {
       bookings: {
         Row: {
           counts_in_subscription: boolean
+          extra_fee_eur: number
+          extra_fee_paid: boolean
           created_at: string
           created_by: string | null
           guest_name: string | null
@@ -82,6 +84,8 @@ export type Database = {
         }
         Insert: {
           counts_in_subscription?: boolean
+          extra_fee_eur?: number
+          extra_fee_paid?: boolean
           created_at?: string
           created_by?: string | null
           guest_name?: string | null
@@ -99,6 +103,8 @@ export type Database = {
         }
         Update: {
           counts_in_subscription?: boolean
+          extra_fee_eur?: number
+          extra_fee_paid?: boolean
           created_at?: string
           created_by?: string | null
           guest_name?: string | null
