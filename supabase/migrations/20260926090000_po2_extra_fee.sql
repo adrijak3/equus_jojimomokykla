@@ -24,7 +24,7 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM public.time_slots ts
      WHERE ts.active = true
-       AND ts.day_of_week = CASE WHEN EXTRACT(DOW FROM _slot_date) = 0 THEN 7 ELSE EXTRACT(DOW FROM _slot_date)::int END
+       AND (ts.one_off_date = _slot_date OR (ts.one_off_date IS NULL AND ts.day_of_week = CASE WHEN EXTRACT(DOW FROM _slot_date) = 0 THEN 7 ELSE EXTRACT(DOW FROM _slot_date)::int END))
        AND ts.slot_time = _slot_time
        AND ts.max_capacity = 2
   ) AND NOT EXISTS (
