@@ -1120,9 +1120,13 @@ export default function Grafikas() {
     const perLesson = Number(sub.price) / Math.max(1, Number(sub.lessons_total));
     const extraFee = Math.max(0, Math.round((45 - perLesson) * 100) / 100);
     setPo2Busy(true);
-    const ok = await createBooking(po2Choice.date, po2Choice.time, { subscriptionId, countsInSubscription: true, extraFeeEur: extraFee });
+    const { error } = await supabase.rpc("book_po2_with_subscription" as any, { _slot_date: formatDateISO(po2Choice.date), _slot_time: po2Choice.time, _subscription_id: subscriptionId, _extra_fee_eur: extraFee });
     setPo2Busy(false);
-    if (ok) setPo2Choice(null);
+    if (error) { toast.error(error.message); return; }
+    setPo2Choice(null);
+    setBookingSuccess({ date: po2Choice.date, time: po2Choice.time });
+    toast.success(language === "lt" ? "Pamoka sėkmingai užregistruota!" : "Your lesson is booked!");
+    await loadData();
   };
 
   const choosePo2Separate = async () => {
