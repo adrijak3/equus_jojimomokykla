@@ -1062,6 +1062,10 @@ export type Database = {
         Args: { _booking_id: string; _horse_id: string }
         Returns: Json
       }
+      book_po2_with_subscription: {
+        Args: { _extra_fee_eur?: number; _slot_date: string; _slot_time: string; _subscription_id: string }
+        Returns: Json
+      }
       admin_set_booking_subscription: {
         Args: { _booking_id: string; _subscription_id: string }
         Returns: Json
