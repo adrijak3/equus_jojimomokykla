@@ -3,11 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CalendarDays, ChevronRight, ReceiptText } from "lucide-react";
+import { toast } from "sonner";
 import { formatTime } from "@/lib/equus";
 
 const MONTHS = ["Sausis", "Vasaris", "Kovas", "Balandis", "Gegužė", "Birželis", "Liepa", "Rugpjūtis", "Rugsėjis", "Spalis", "Lapkritis", "Gruodis"];
 
-type Row = { id: string; user_id: string; slot_date: string; slot_time: string; status: string; subscription_id: string | null; counts_in_subscription: boolean };
+type Row = { id: string; user_id: string; slot_date: string; slot_time: string; status: string; subscription_id: string | null; counts_in_subscription: boolean; extra_fee_eur: number; extra_fee_paid: boolean };
 type Profile = { id: string; full_name: string };
 
 function monthKeys() {
@@ -30,11 +31,11 @@ export function UnpaidLessonsOverview({ userId, staff = false }: { userId?: stri
       const endDate = new Date();
       endDate.setMonth(endDate.getMonth() + 1, 0);
       const end = endDate.toISOString().slice(0, 10);
-      let q = supabase.from("bookings").select("id,user_id,slot_date,slot_time,status,subscription_id,counts_in_subscription")
+      let q = supabase.from("bookings").select("id,user_id,slot_date,slot_time,status,subscription_id,counts_in_subscription,extra_fee_eur,extra_fee_paid")
         .gte("slot_date", start).lte("slot_date", end)
         .in("status", ["active", "completed"])
-        .is("subscription_id", null)
         .eq("counts_in_subscription", true)
+        .or("subscription_id.is.null,and(extra_fee_eur.gt.0,extra_fee_paid.eq.false)")
         .order("slot_date", { ascending: false });
       if (userId) q = q.eq("user_id", userId);
       const { data } = await q;
@@ -90,7 +91,16 @@ function MonthButton({ label, rows, onOpen }: { label: string; rows: Row[]; onOp
 }
 
 function DetailsDialog({ selected, onClose }: { selected: { title: string; rows: Row[] } | null; onClose: () => void }) {
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const markExtraPaid = async (row: Row) => {
+    setBusyId(row.id);
+    const { error } = await supabase.from("bookings").update({ extra_fee_paid: true }).eq("id", row.id);
+    setBusyId(null);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Papildomas mokestis pažymėtas kaip apmokėtas.");
+    onClose();
+  };
   return <Dialog open={!!selected} onOpenChange={(o) => !o && onClose()}><DialogContent className="bg-gradient-card border-gold/20"><DialogHeader><DialogTitle className="font-display text-2xl text-gradient-gold">{selected?.title}</DialogTitle></DialogHeader>
-    {!selected?.rows.length ? <p className="text-sm italic text-muted-foreground py-3">Šį mėnesį nepriskirtų treniruočių nėra.</p> : <ul className="space-y-2 max-h-80 overflow-auto">{selected.rows.map((r) => <li key={r.id} className="flex items-center gap-3 rounded-md border border-gold/10 bg-background/30 px-3 py-2.5"><CalendarDays className="w-4 h-4 text-gold"/><span className="text-sm">{new Date(`${r.slot_date}T12:00:00`).toLocaleDateString("lt-LT", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span><span className="ml-auto tabular-nums text-sm text-muted-foreground">{formatTime(r.slot_time)}</span></li>)}</ul>}
+    {!selected?.rows.length ? <p className="text-sm italic text-muted-foreground py-3">Šį mėnesį neapmokėtų treniruočių nėra.</p> : <ul className="space-y-2 max-h-80 overflow-auto">{selected.rows.map((r) => <li key={r.id} className="rounded-md border border-gold/10 bg-background/30 px-3 py-2.5"><div className="flex items-center gap-3"><CalendarDays className="w-4 h-4 text-gold"/><span className="text-sm">{new Date(String(r.slot_date) + "T12:00:00").toLocaleDateString("lt-LT", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span><span className="ml-auto tabular-nums text-sm text-muted-foreground">{formatTime(r.slot_time)}</span></div>{r.extra_fee_eur > 0 && !r.extra_fee_paid && <div className="mt-2 flex items-center justify-between gap-2 rounded bg-blush/10 px-2 py-1.5 text-xs"><span>Papildomai: <b>{r.extra_fee_eur.toFixed(2).replace(".00","")} €</b></span><Button size="sm" variant="gold" onClick={() => void markExtraPaid(r)} disabled={busyId === r.id}>{busyId === r.id ? "..." : "Apmokėta"}</Button></div>}</li>)}</ul>}
   </DialogContent></Dialog>;
 }
