@@ -17,6 +17,7 @@ DECLARE
   v_user uuid := auth.uid();
   v_sub public.subscriptions%ROWTYPE;
   v_booking uuid;
+  v_trainer_name text;
 BEGIN
   IF v_user IS NULL THEN RAISE EXCEPTION 'NOT_AUTHENTICATED'; END IF;
   IF _extra_fee_eur < 0 THEN RAISE EXCEPTION 'INVALID_EXTRA_FEE'; END IF;
@@ -30,12 +31,20 @@ BEGIN
   IF v_sub.lessons_used >= v_sub.lessons_total THEN RAISE EXCEPTION 'NO_SUBSCRIPTION_LESSONS_LEFT'; END IF;
   IF v_sub.lesson_type NOT IN ('sportine', 'sportine_po2') THEN RAISE EXCEPTION 'SUBSCRIPTION_NOT_ELIGIBLE_FOR_PO2'; END IF;
 
+  SELECT trainer_name INTO v_trainer_name
+    FROM public.time_slots
+   WHERE active = true
+     AND day_of_week = CASE WHEN EXTRACT(DOW FROM _slot_date) = 0 THEN 7 ELSE EXTRACT(DOW FROM _slot_date)::int END
+     AND slot_time = _slot_time
+   ORDER BY id
+   LIMIT 1;
+
   INSERT INTO public.bookings (
     user_id, slot_date, slot_time, status, subscription_id,
-    counts_in_subscription, extra_fee_eur, extra_fee_paid
+    counts_in_subscription, extra_fee_eur, extra_fee_paid, trainer_name
   ) VALUES (
     v_user, _slot_date, _slot_time, 'active', _subscription_id,
-    true, _extra_fee_eur, false
+    true, _extra_fee_eur, false, v_trainer_name
   ) RETURNING id INTO v_booking;
 
   UPDATE public.subscriptions
